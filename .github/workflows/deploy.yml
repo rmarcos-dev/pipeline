@@ -1,4 +1,13 @@
-steps:
+name: Deploy Pipeline
+
+on:
+  push:
+    branches: [ "feature/dockerizacion", "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
