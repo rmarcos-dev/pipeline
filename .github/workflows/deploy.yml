@@ -31,4 +31,4 @@ jobs:
             docker build -t mi-web-app:latest .
             docker stop web-produccion || true
             docker rm web-produccion || true
-            docker run -d --name web-produccion -p 80:8000 mi-web-app:latest
+            docker run -d --name web-produccion -p 12345:8000 mi-web-app:latest
