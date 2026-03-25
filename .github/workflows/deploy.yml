@@ -1,9 +1,8 @@
-name: Deploy Pipeline
+name: Deploy Indestructible
 
 on:
   push:
-    branches:
-      - feature/dockerizacion
+    branches: [ "feature/dockerizacion" ]
 
 jobs:
   deploy:
@@ -12,23 +11,27 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      # --- NUEVO PASO: ESTO UNE A GITHUB A TU RED PRIVADA ---
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
-        with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-
-      - name: Desplegar vía SSH
+      - name: Despliegue en Servidor appsur
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
           script: |
             cd ~/pipeline/pipeline
             git pull origin feature/dockerizacion
+            
+            # Construcción ultra rápida
             docker build -t mi-web-app:latest .
-            docker stop web-produccion || true
-            docker rm web-produccion || true
-            docker run -d --name web-produccion -p 12345:8000 mi-web-app:latest
+            
+            # Reemplazo atómico
+            docker rm -f web-produccion || true
+            
+            docker run -d \
+              --name web-produccion \
+              --restart always \
+              -p 12345:8000 \
+              mi-web-app:latest
+            
+            # Limpieza de imágenes viejas
+            docker image prune -f
