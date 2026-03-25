@@ -1,29 +1,34 @@
-name: Deploy
+name: Deploy Local Directo
+
 on:
   push:
-    branches: [ "feature/dockerizacion" ]
+    branches: [ "feature/dockerizacion", "main" ]
+
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    # Usamos 'self-hosted' porque tú ya tienes un runner en tu servidor
+    runs-on: self-hosted 
+
     steps:
-      - name: Checkout
+      - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Tailscale
-        uses: tailscale/github-action@v2
-        with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-
-      - name: SSH Deploy
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/pipeline/pipeline
-            git pull origin feature/dockerizacion
-            docker build -t mi-web-app:latest .
-            docker rm -f web-produccion || true
-            docker run -d --name web-produccion --restart always -p 12345:8000 mi-web-app:latest
-            docker image prune -f
+      - name: Build y Run Manual
+        run: |
+          cd ~/pipeline/pipeline
+          git pull origin feature/dockerizacion || git pull origin main
+          
+          # Construir usando el caché que ya configuramos
+          docker build -t mi-web-app:latest .
+          
+          # Parar el viejo y lanzar el nuevo
+          docker rm -f web-produccion || true
+          
+          docker run -d \
+            --name web-produccion \
+            --restart always \
+            -p 12345:8000 \
+            mi-web-app:latest
+          
+          # Limpiar imágenes huérfanas
+          docker image prune -f
