@@ -6,13 +6,19 @@ on:
 
 jobs:
   deploy:
-    # Usamos ubuntu-latest porque el log #7 muestra que usaste 
-    # la acción de Tailscale para conectar desde fuera.
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout del código
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Comprobar Secretos
+        run: |
+          if [ -z "${{ secrets.HOST }}" ]; then
+            echo "ERROR: El secreto HOST está VACÍO en GitHub."
+            exit 1
+          else
+            echo "OK: El secreto HOST tiene contenido."
+          fi
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
@@ -25,19 +31,12 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             cd ~/pipeline/pipeline
             git pull origin feature/dockerizacion || git pull origin main
-            
-            # Tu build optimizado
             docker build -t mi-web-app:latest .
-            
-            # Tu despliegue indestructible
             docker rm -f web-produccion || true
-            docker run -d \
-              --name web-produccion \
-              --restart always \
-              -p 12345:8000 \
-              mi-web-app:latest
-            
+            docker run -d --name web-produccion --restart always -p 12345:8000 mi-web-app:latest
             docker image prune -f
+
