@@ -1,4 +1,4 @@
-name: Deploy Local Directo
+name: Deploy Pipeline
 
 on:
   push:
@@ -6,29 +6,38 @@ on:
 
 jobs:
   deploy:
-    # Usamos 'self-hosted' porque tú ya tienes un runner en tu servidor
-    runs-on: self-hosted 
-
+    # Usamos ubuntu-latest porque el log #7 muestra que usaste 
+    # la acción de Tailscale para conectar desde fuera.
+    runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Build y Run Manual
-        run: |
-          cd ~/pipeline/pipeline
-          git pull origin feature/dockerizacion || git pull origin main
-          
-          # Construir usando el caché que ya configuramos
-          docker build -t mi-web-app:latest .
-          
-          # Parar el viejo y lanzar el nuevo
-          docker rm -f web-produccion || true
-          
-          docker run -d \
-            --name web-produccion \
-            --restart always \
-            -p 12345:8000 \
-            mi-web-app:latest
-          
-          # Limpiar imágenes huérfanas
-          docker image prune -f
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: SSH Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/pipeline/pipeline
+            git pull origin feature/dockerizacion || git pull origin main
+            
+            # Tu build optimizado
+            docker build -t mi-web-app:latest .
+            
+            # Tu despliegue indestructible
+            docker rm -f web-produccion || true
+            docker run -d \
+              --name web-produccion \
+              --restart always \
+              -p 12345:8000 \
+              mi-web-app:latest
+            
+            docker image prune -f
