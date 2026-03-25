@@ -3,7 +3,7 @@ name: Deploy Pipeline
 on:
   push:
     branches:
-      - feature/dockerizacion  # Se activa cuando subes cambios a esta rama
+      - feature/dockerizacion
 
 jobs:
   deploy:
@@ -11,6 +11,12 @@ jobs:
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
+
+      # --- NUEVO PASO: ESTO UNE A GITHUB A TU RED PRIVADA ---
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
       - name: Desplegar vía SSH
         uses: appleboy/ssh-action@master
