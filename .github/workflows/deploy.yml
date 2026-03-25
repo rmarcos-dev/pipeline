@@ -1,4 +1,4 @@
-name: Deploy Indestructible
+name: Deploy via Tailscale
 
 on:
   push:
@@ -8,10 +8,17 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout del código
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Despliegue en Servidor appsur
+      # Este paso conecta GitHub con tu red privada de Tailscale
+      - name: Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      # Ejecutar el despliegue por SSH usando la IP 100.x.x.x
+      - name: SSH Deploy
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -21,10 +28,10 @@ jobs:
             cd ~/pipeline/pipeline
             git pull origin feature/dockerizacion
             
-            # Construcción ultra rápida
+            # Build ultra rápido con caché
             docker build -t mi-web-app:latest .
             
-            # Reemplazo atómico
+            # Borrado y arranque limpio
             docker rm -f web-produccion || true
             
             docker run -d \
@@ -33,5 +40,5 @@ jobs:
               -p 12345:8000 \
               mi-web-app:latest
             
-            # Limpieza de imágenes viejas
+            # Limpieza de imágenes antiguas
             docker image prune -f
