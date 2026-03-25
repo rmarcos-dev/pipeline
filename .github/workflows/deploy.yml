@@ -1,4 +1,4 @@
-name: Deploy Pipeline
+name: Deploy Directo Self-Hosted
 
 on:
   push:
@@ -6,27 +6,14 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Checkout
+      - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
-        with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-
-      - name: SSH Deploy
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            cd ~/pipeline/pipeline
-            git pull origin feature/dockerizacion || git pull origin main
-            docker build -t mi-web-app:latest .
-            docker rm -f web-produccion || true
-            docker run -d --name web-produccion --restart always -p 12345:8000 mi-web-app:latest
-            docker image prune -f
+      - name: Construir y Levantar Docker
+        run: |
+          docker build -t mi-web-app:latest .
+          docker rm -f web-produccion || true
+          docker run -d --name web-produccion --restart always -p 12345:8000 mi-web-app:latest
+          docker image prune -f
