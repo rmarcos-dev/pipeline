@@ -28,5 +28,7 @@ jobs:
           script: |
             cd ~/pipeline/pipeline
             git pull origin feature/dockerizacion
-            docker build -t mi-pipeline:latest .
-            docker run --rm mi-pipeline:latest
+            docker build -t mi-web-app:latest .
+            docker stop web-produccion || true
+            docker rm web-produccion || true
+            docker run -d --name web-produccion -p 80:8000 mi-web-app:latest
