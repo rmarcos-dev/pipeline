@@ -1,0 +1,26 @@
+name: Deploy Pipeline
+
+on:
+  push:
+    branches:
+      - feature/dockerizacion  # Se activa cuando subes cambios a esta rama
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Desplegar vía SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd ~/pipeline/pipeline
+            git pull origin feature/dockerizacion
+            docker build -t mi-pipeline:latest .
+            docker run --rm mi-pipeline:latest
