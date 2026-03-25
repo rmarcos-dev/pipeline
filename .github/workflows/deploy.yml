@@ -11,15 +11,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Comprobar Secretos
-        run: |
-          if [ -z "${{ secrets.HOST }}" ]; then
-            echo "ERROR: El secreto HOST está VACÍO en GitHub."
-            exit 1
-          else
-            echo "OK: El secreto HOST tiene contenido."
-          fi
-
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
         with:
@@ -28,8 +19,8 @@ jobs:
       - name: SSH Deploy
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
+          host: ${{ secrets.REMOTE_HOST }}        # <--- Corregido a REMOTE_HOST
+          username: ${{ secrets.REMOTE_USER }}    # <--- Corregido a REMOTE_USER
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
@@ -39,4 +30,3 @@ jobs:
             docker rm -f web-produccion || true
             docker run -d --name web-produccion --restart always -p 12345:8000 mi-web-app:latest
             docker image prune -f
-
