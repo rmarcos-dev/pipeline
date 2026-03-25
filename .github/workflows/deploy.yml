@@ -1,9 +1,7 @@
-name: Deploy via Tailscale
-
+name: Deploy
 on:
   push:
     branches: [ "feature/dockerizacion" ]
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -11,13 +9,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Este paso conecta GitHub con tu red privada de Tailscale
       - name: Tailscale
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
-      # Ejecutar el despliegue por SSH usando la IP 100.x.x.x
       - name: SSH Deploy
         uses: appleboy/ssh-action@master
         with:
@@ -27,18 +23,7 @@ jobs:
           script: |
             cd ~/pipeline/pipeline
             git pull origin feature/dockerizacion
-            
-            # Build ultra rápido con caché
             docker build -t mi-web-app:latest .
-            
-            # Borrado y arranque limpio
             docker rm -f web-produccion || true
-            
-            docker run -d \
-              --name web-produccion \
-              --restart always \
-              -p 12345:8000 \
-              mi-web-app:latest
-            
-            # Limpieza de imágenes antiguas
+            docker run -d --name web-produccion --restart always -p 12345:8000 mi-web-app:latest
             docker image prune -f
