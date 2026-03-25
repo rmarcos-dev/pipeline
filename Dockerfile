@@ -1,24 +1,21 @@
-# 1. Usamos una imagen ligera de Python
+# 1. Usamos una imagen de Python ligera
 FROM python:3.11-slim
 
-# 2. Instalamos curl para que el Healthcheck funcione
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-
-# 3. Directorio de trabajo
+# 2. Establecemos el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# 4. CAPA DE DEPENDENCIAS (No cambiará si no tocas requirements.txt)
+# 3. Copiamos el archivo de requisitos primero (para aprovechar la caché de Docker)
 COPY requirements.txt .
+
+# 4. Instalamos las librerías
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 5. CAPA DE CÓDIGO (Lo que cambiarás en cada push)
+# 5. Copiamos el resto del código (tu main.py profesional)
 COPY . .
 
-# 6. SEGURO DE VIDA (Healthcheck)
-# Docker vigila que la app responda. Si falla, el contenedor se marca como "unhealthy"
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/ || exit 1
-
-# 7. Ejecución
+# 6. Exponemos el puerto 8000 (el que espera FastAPI)
 EXPOSE 8000
-CMD ["python", "main.py"]
+
+# 7. Comando para arrancar la web
+# --host 0.0.0.0 es vital para que sea accesible desde fuera del contenedor
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
